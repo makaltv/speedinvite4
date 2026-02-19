@@ -28,8 +28,10 @@ const IntroScreen = ({ onEnter }: IntroScreenProps) => {
         muted
         playsInline
         loop
+        preload="auto"
         onTimeUpdate={handleVideoTimeUpdate}
-        className="absolute inset-0 w-full h-full object-cover opacity-60"
+        className="absolute inset-0 w-full h-full object-cover opacity-60 [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-play-button]:hidden [&::-webkit-media-controls-start-playback-button]:hidden"
+        style={{ pointerEvents: 'none' }}
       >
         <source src={introVideo} type="video/mp4" />
       </video>
