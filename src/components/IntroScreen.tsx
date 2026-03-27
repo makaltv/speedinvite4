@@ -6,19 +6,23 @@ interface IntroScreenProps {
   onEnter: () => void;
 }
 
+const INTRO_DURATION_MS = 5200;
+
 const IntroScreen = ({ onEnter }: IntroScreenProps) => {
-  const [phase, setPhase] = useState<"video" | "text1" | "text2" | "button">("video");
+  const [phase, setPhase] = useState<"video" | "text1" | "text2">("video");
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const fallbackTimer = window.setTimeout(onEnter, INTRO_DURATION_MS);
 
-    // Force autoplay on mobile
+    if (!video) {
+      return () => window.clearTimeout(fallbackTimer);
+    }
+
     const tryPlay = () => {
       video.play().catch(() => {
-        // If autoplay fails, skip to button phase immediately
-        setPhase("button");
+        window.setTimeout(onEnter, 1800);
       });
     };
 
@@ -27,87 +31,75 @@ const IntroScreen = ({ onEnter }: IntroScreenProps) => {
     } else {
       video.addEventListener("canplay", tryPlay, { once: true });
     }
-  }, []);
+
+    return () => {
+      window.clearTimeout(fallbackTimer);
+    };
+  }, [onEnter]);
 
   const handleVideoTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.currentTarget;
     if (video.currentTime > 1 && phase === "video") setPhase("text1");
     if (video.currentTime > 2.5) setPhase("text2");
-    if (video.currentTime > 3.8) setPhase("button");
   };
 
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-castle-dark overflow-hidden"
       exit={{ opacity: 0 }}
-      transition={{ duration: 1.5 }}
+      transition={{ duration: 1.2 }}
     >
       <video
         ref={videoRef}
         autoPlay
         muted
         playsInline
-        loop
         preload="auto"
         onTimeUpdate={handleVideoTimeUpdate}
-        className="absolute inset-0 w-full h-full object-cover opacity-60"
-        style={{ pointerEvents: 'none', WebkitAppearance: 'none' }}
+        onEnded={onEnter}
+        className="absolute inset-0 h-full w-full object-cover opacity-60"
+        style={{ pointerEvents: "none", WebkitAppearance: "none" }}
       >
         <source src={introVideo} type="video/mp4" />
       </video>
 
       <div className="absolute inset-0 bg-gradient-to-b from-castle-dark/70 via-transparent to-castle-dark/90" />
 
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-lg">
+      <div className="relative z-10 flex max-w-lg flex-col items-center px-6 text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, duration: 1 }}
-          className="text-5xl mb-8"
+          className="mb-8 text-5xl"
         >
           👑
         </motion.div>
 
         <AnimatePresence>
-          {(phase === "text1" || phase === "text2" || phase === "button") && (
+          {(phase === "text1" || phase === "text2") && (
             <motion.p
               key="text1"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1 }}
-              className="font-cinzel text-xl md:text-2xl text-gold-light mb-4 italic"
+              className="mb-4 font-cinzel text-xl italic text-gold-light md:text-2xl"
             >
-              Dans le royaume de l'amour…
+              Dans le royaume de l&apos;amour…
             </motion.p>
           )}
         </AnimatePresence>
 
         <AnimatePresence>
-          {(phase === "text2" || phase === "button") && (
+          {phase === "text2" && (
             <motion.p
               key="text2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1 }}
-              className="font-cinzel text-lg md:text-xl text-foreground mb-12"
+              className="font-cinzel text-lg text-foreground md:text-xl"
             >
               Une union royale sera célébrée.
             </motion.p>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {phase === "button" && (
-            <motion.button
-              key="button"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              onClick={onEnter}
-              className="font-cinzel-regular text-sm md:text-base tracking-[0.3em] uppercase px-10 py-4 border-gold-ornate bg-castle-dark/80 text-gold-light hover:bg-gold/10 transition-all duration-500 animate-pulse-glow"
-            >
-              ⚜ Entrer dans le Royaume ⚜
-            </motion.button>
           )}
         </AnimatePresence>
       </div>
