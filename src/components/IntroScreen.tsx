@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import introVideo from "@/assets/intro-video.mp4";
 
@@ -8,6 +8,26 @@ interface IntroScreenProps {
 
 const IntroScreen = ({ onEnter }: IntroScreenProps) => {
   const [phase, setPhase] = useState<"video" | "text1" | "text2" | "button">("video");
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Force autoplay on mobile
+    const tryPlay = () => {
+      video.play().catch(() => {
+        // If autoplay fails, skip to button phase immediately
+        setPhase("button");
+      });
+    };
+
+    if (video.readyState >= 3) {
+      tryPlay();
+    } else {
+      video.addEventListener("canplay", tryPlay, { once: true });
+    }
+  }, []);
 
   const handleVideoTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.currentTarget;
@@ -22,26 +42,23 @@ const IntroScreen = ({ onEnter }: IntroScreenProps) => {
       exit={{ opacity: 0 }}
       transition={{ duration: 1.5 }}
     >
-      {/* Video background */}
       <video
+        ref={videoRef}
         autoPlay
         muted
         playsInline
         loop
         preload="auto"
         onTimeUpdate={handleVideoTimeUpdate}
-        className="absolute inset-0 w-full h-full object-cover opacity-60 [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-play-button]:hidden [&::-webkit-media-controls-start-playback-button]:hidden"
-        style={{ pointerEvents: 'none' }}
+        className="absolute inset-0 w-full h-full object-cover opacity-60"
+        style={{ pointerEvents: 'none', WebkitAppearance: 'none' }}
       >
         <source src={introVideo} type="video/mp4" />
       </video>
 
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-castle-dark/70 via-transparent to-castle-dark/90" />
 
-      {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-lg">
-        {/* Crown ornament */}
         <motion.div
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
